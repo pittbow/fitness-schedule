@@ -2,9 +2,11 @@ const DAY_ORDER = ['星期一', '星期二', '星期三', '星期四', '星期�
 
 let flatClasses = [];
 let areaOptions = [];
+let storeOptions = [];
 
 const searchInput = document.getElementById('searchInput');
 const areaFilter = document.getElementById('areaFilter');
+const storeFilter = document.getElementById('storeFilter');
 const dayFilter = document.getElementById('dayFilter');
 const statusEl = document.getElementById('status');
 const resultsEl = document.getElementById('results');
@@ -21,9 +23,11 @@ async function loadData() {
 
   const areaSet = new Map();
   flatClasses = [];
+  storeOptions = [];
 
   data.stores.forEach(store => {
     if (!areaSet.has(store.areaId)) areaSet.set(store.areaId, store.areaName);
+    storeOptions.push({ url: store.url, name: store.name, areaId: store.areaId, areaName: store.areaName });
     (store.classes || []).forEach(c => {
       flatClasses.push({
         storeName: store.name,
@@ -49,9 +53,58 @@ async function loadData() {
     areaFilter.appendChild(opt);
   });
 
+  buildStoreOptions();
+
   dataInfoEl.textContent = `課表週期：${data.weekLabel}　資料更新：${new Date(data.generatedAt).toLocaleString('zh-TW')}`;
   statusEl.textContent = '';
   render();
+}
+
+function buildStoreOptions() {
+  const areaId = areaFilter.value;
+  const prevValue = storeFilter.value;
+
+  storeFilter.innerHTML = '<option value="">所有分廠</option>';
+
+  const relevant = areaId ? storeOptions.filter(s => s.areaId === areaId) : storeOptions;
+
+  if (areaId) {
+    relevant
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'))
+      .forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.url;
+        opt.textContent = s.name;
+        storeFilter.appendChild(opt);
+      });
+  } else {
+    const byArea = new Map();
+    relevant.forEach(s => {
+      if (!byArea.has(s.areaId)) byArea.set(s.areaId, { areaName: s.areaName, stores: [] });
+      byArea.get(s.areaId).stores.push(s);
+    });
+    const groups = Array.from(byArea.values());
+    groups.sort((a, b) => a.areaName.localeCompare(b.areaName, 'zh-Hant'));
+    groups.forEach(g => {
+      const optgroup = document.createElement('optgroup');
+      optgroup.label = g.areaName;
+      g.stores
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'))
+        .forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.url;
+          opt.textContent = s.name;
+          optgroup.appendChild(opt);
+        });
+      storeFilter.appendChild(optgroup);
+    });
+  }
+
+  if (relevant.some(s => s.url === prevValue)) {
+    storeFilter.value = prevValue;
+  }
 }
 
 function matches(item, query) {
@@ -64,20 +117,22 @@ function matches(item, query) {
 function render() {
   const query = normalize(searchInput.value);
   const area = areaFilter.value;
+  const store = storeFilter.value;
   const day = dayFilter.value;
 
-  if (!query && !area && !day) {
+  if (!query && !area && !store && !day) {
     resultsEl.innerHTML = '';
     statusEl.textContent = '';
     const hint = document.createElement('div');
     hint.className = 'hint-state';
-    hint.textContent = '輸入分廠、課程或老師姓名開始搜尋，例如「台北信義」「瑜珈」「Echo」';
+    hint.textContent = '輸入分廠、課程或老師姓名開始搜尋，或用上面的下拉選單挑分廠';
     resultsEl.appendChild(hint);
     return;
   }
 
   const filtered = flatClasses.filter(item => {
     if (area && item.areaId !== area) return false;
+    if (store && item.storeUrl !== store) return false;
     if (day && item.week !== day) return false;
     return matches(item, query);
   });
@@ -166,7 +221,11 @@ searchInput.addEventListener('input', () => {
   clearTimeout(debounceTimer);
   debounceTimer = setTimeout(render, 120);
 });
-areaFilter.addEventListener('change', render);
+areaFilter.addEventListener('change', () => {
+  buildStoreOptions();
+  render();
+});
+storeFilter.addEventListener('change', render);
 dayFilter.addEventListener('change', render);
 
 loadData().catch(err => {
