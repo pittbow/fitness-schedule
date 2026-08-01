@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>健身工廠課表搜尋</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1b1f2a" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>健身工廠課表搜尋</h1>
+  <p class="subtitle">輸入分廠、課程或老師姓名，快速找到想上的團體課</p>
+</header>
+
+<main>
+  <div class="search-panel">
+    <input id="searchInput" type="search" placeholder="例如：台北信義、瑜珈、Echo..." autocomplete="off" />
+    <div class="filter-row">
+      <select id="areaFilter">
+        <option value="">所有地區</option>
+      </select>
+      <select id="dayFilter">
+        <option value="">所有星期</option>
+        <option value="星期一">星期一</option>
+        <option value="星期二">星期二</option>
+        <option value="星期三">星期三</option>
+        <option value="星期四">星期四</option>
+        <option value="星期五">星期五</option>
+        <option value="星期六">星期六</option>
+        <option value="星期日">星期日</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="status" class="status"></div>
+  <div id="results" class="results"></div>
+</main>
+
+<footer class="app-footer">
+  <span id="dataInfo"></span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
