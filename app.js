@@ -1,16 +1,48 @@
 const DAY_ORDER = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+const WEEKDAY_NAMES = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+const FAVORITES_KEY = 'ff_favorites';
 
 let flatClasses = [];
 let areaOptions = [];
 let storeOptions = [];
+let favorites = new Set(loadFavorites());
 
 const searchInput = document.getElementById('searchInput');
 const areaFilter = document.getElementById('areaFilter');
 const storeFilter = document.getElementById('storeFilter');
 const dayFilter = document.getElementById('dayFilter');
+const favoritesOnlyEl = document.getElementById('favoritesOnly');
+const favoritesCountEl = document.getElementById('favoritesCount');
 const statusEl = document.getElementById('status');
 const resultsEl = document.getElementById('results');
 const dataInfoEl = document.getElementById('dataInfo');
+
+function loadFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveFavorites() {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favorites)));
+}
+
+function classKey(item) {
+  return `${item.storeUrl}|${item.week}|${item.time}|${item.name}`;
+}
+
+function toggleFavorite(key) {
+  if (favorites.has(key)) favorites.delete(key);
+  else favorites.add(key);
+  saveFavorites();
+  render();
+}
+
+function todayWeekName() {
+  return WEEKDAY_NAMES[new Date().getDay()];
+}
 
 function normalize(s) {
   return (s || '').toString().trim().toLowerCase();
@@ -119,8 +151,12 @@ function render() {
   const area = areaFilter.value;
   const store = storeFilter.value;
   const day = dayFilter.value;
+  const favoritesOnly = favoritesOnlyEl.checked;
+  const today = todayWeekName();
 
-  if (!query && !area && !store && !day) {
+  favoritesCountEl.textContent = favorites.size ? `（${favorites.size}）` : '';
+
+  if (!query && !area && !store && !day && !favoritesOnly) {
     resultsEl.innerHTML = '';
     statusEl.textContent = '';
     const hint = document.createElement('div');
@@ -134,6 +170,7 @@ function render() {
     if (area && item.areaId !== area) return false;
     if (store && item.storeUrl !== store) return false;
     if (day && item.week !== day) return false;
+    if (favoritesOnly && !favorites.has(classKey(item))) return false;
     return matches(item, query);
   });
 
@@ -141,7 +178,9 @@ function render() {
     resultsEl.innerHTML = '';
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.textContent = '找不到符合的課程，換個關鍵字試試看';
+    empty.textContent = favoritesOnly && favorites.size === 0
+      ? '你還沒有收藏任何課程，點課程旁邊的星星加入收藏'
+      : '找不到符合的課程，換個關鍵字試試看';
     resultsEl.appendChild(empty);
     statusEl.textContent = '';
     return;
@@ -180,8 +219,12 @@ function render() {
     card.appendChild(h2);
 
     g.items.forEach(item => {
+      const isToday = item.week === today;
+      const key = classKey(item);
+      const isFavorite = favorites.has(key);
+
       const row = document.createElement('div');
-      row.className = 'class-row';
+      row.className = 'class-row' + (isToday ? ' today' : '');
 
       const dayEl = document.createElement('div');
       dayEl.className = 'class-day';
@@ -190,6 +233,13 @@ function render() {
       timeEl.className = 'time';
       timeEl.textContent = item.time;
       dayEl.appendChild(timeEl);
+      if (isToday) {
+        const badge = document.createElement('span');
+        badge.className = 'today-badge';
+        badge.textContent = '今天';
+        dayEl.appendChild(document.createElement('br'));
+        dayEl.appendChild(badge);
+      }
 
       const mainEl = document.createElement('div');
       mainEl.className = 'class-main';
@@ -206,9 +256,17 @@ function render() {
       teacherEl.className = 'class-teacher';
       teacherEl.textContent = item.teacher;
 
+      const starBtn = document.createElement('button');
+      starBtn.type = 'button';
+      starBtn.className = 'star-button' + (isFavorite ? ' active' : '');
+      starBtn.textContent = isFavorite ? '★' : '☆';
+      starBtn.setAttribute('aria-label', isFavorite ? '取消收藏' : '加入收藏');
+      starBtn.addEventListener('click', () => toggleFavorite(key));
+
       row.appendChild(dayEl);
       row.appendChild(mainEl);
       row.appendChild(teacherEl);
+      row.appendChild(starBtn);
       card.appendChild(row);
     });
 
@@ -227,6 +285,7 @@ areaFilter.addEventListener('change', () => {
 });
 storeFilter.addEventListener('change', render);
 dayFilter.addEventListener('change', render);
+favoritesOnlyEl.addEventListener('change', render);
 
 loadData().catch(err => {
   statusEl.textContent = '課表資料載入失敗：' + err.message;

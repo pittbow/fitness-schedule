@@ -90,6 +90,32 @@ main {
   font-size: 0.9rem;
 }
 
+.favorites-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.88rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.favorites-toggle input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.favorites-toggle:has(input:checked) {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#favoritesCount {
+  color: inherit;
+}
+
 .status {
   color: var(--muted);
   font-size: 0.9rem;
@@ -124,20 +150,36 @@ main {
 
 .class-row {
   display: grid;
-  grid-template-columns: 4.5em 1fr auto;
+  grid-template-columns: 4.5em 1fr auto auto;
   gap: 10px;
   align-items: center;
-  padding: 8px 0;
+  padding: 8px 6px;
   border-top: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .class-row:first-of-type {
   border-top: none;
 }
 
+.class-row.today {
+  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
+}
+
 .class-day {
   color: var(--accent-2);
   font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.class-day .today-badge {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-2);
+  color: #fff;
+  font-size: 0.68rem;
   font-weight: 600;
 }
 
@@ -161,6 +203,20 @@ main {
   text-align: right;
   font-size: 0.9rem;
   white-space: nowrap;
+}
+
+.star-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+  padding: 4px;
+  color: var(--border);
+}
+
+.star-button.active {
+  color: var(--accent);
 }
 
 .empty-state, .hint-state {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ff-schedule-v2';
+const CACHE_NAME = 'ff-schedule-v3';
 const ASSETS = [
   './',
   './index.html',
